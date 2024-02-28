@@ -144,7 +144,7 @@ resource "aws_instance" "pubic_server" {
   ami                         = var.ami_of_Public_server1
   instance_type               = var.instance_type
   subnet_id                   = aws_subnet.public_Subnet.id
-  associate_public_ip_address = "false"
+  associate_public_ip_address = "true"
   vpc_security_group_ids      = [aws_security_group.my-sec-group.id]
   key_name                    = var.server1_key_name
 
