@@ -17,6 +17,18 @@ pipeline {
                 }
             }
         }
+        stage('Clone Ansible Repository on Server') {
+            steps {
+                script {
+                    // SSH into the server and clone the Ansible repository (only ansible branch)
+                    sshagent(credentials: ['sshcreds']) {
+                        sh """
+                        ssh -o StrictHostKeyChecking=no ubuntu@${env.PUBLIC_IP} 'git clone -b ansible --single-branch git@github.com:suriya8299/Infrastructure.git /home/ubuntu/Infrastructure'
+                        """
+                    }
+                }
+            }
+        }
         stage('Install Ansible and Dependencies') {
             steps {
                 script {
@@ -28,7 +40,9 @@ pipeline {
                             sudo apt install -y ansible && \
                             sudo apt-get install -y python3 && \
                             sudo apt-get install -y python3-pip && \
-                            sudo pip3 install boto3"
+                            sudo pip3 install boto3 && \
+                            cd /home/ubuntu/Infrastructure && \
+                            ansible-playbook -i aws_ec2.yaml main.yaml"
                         """
                     }
                 }
