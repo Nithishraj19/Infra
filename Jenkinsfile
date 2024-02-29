@@ -22,7 +22,7 @@ pipeline {
                 script {
                     // Use ssh-agent for authentication and scp to copy privatekey.pem to the server
                     sshagent(credentials: ['sshcreds']) {
-                        sh "scp -o StrictHostKeyChecking=no /var/libs/jenkins/privatekey.pem ubuntu@${env.PUBLIC_IP}:/home/ubuntu/privatekey.pem"
+                        sh "scp -o StrictHostKeyChecking=no /var/lib/jenkins/privatekey.pem ubuntu@${env.PUBLIC_IP}:/home/ubuntu/privatekey.pem"
                     }
                 }
             }
