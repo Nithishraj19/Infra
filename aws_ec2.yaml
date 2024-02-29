@@ -1,6 +1,6 @@
 ---
 plugin: aws_ec2
 filters:
-  "tag:Name": "private*"
+  "tag:Name": "Private*"
 compose:
   ansible_host: private_ip_address
