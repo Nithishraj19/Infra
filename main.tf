@@ -147,11 +147,10 @@ resource "aws_instance" "pubic_server" {
   ami           = var.ami_of_Public_server1
   instance_type = var.instance_type
   subnet_id     = aws_subnet.public_Subnet[0].id
-
   associate_public_ip_address = "true"
   vpc_security_group_ids      = [aws_security_group.securitygroup.id]
   key_name                    = var.server1_key_name
-
+  iam_instance_profile = var.role
   # iam_instance_profile = "ec2_full_access"
 
   tags = {

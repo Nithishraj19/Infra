@@ -9,3 +9,4 @@ server1_key_name                = "surya"
 ami_of_Public_server1           = "ami-03f4878755434977f"
 ami_of_private_server           = "ami-03f4878755434977f"
 name_of_private_server          = ["private_server1", "private_server2"]
+role = "arn:aws:iam::365735194013:role/ec2_full_acess"

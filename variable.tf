@@ -50,3 +50,7 @@ variable "ami_of_private_server" {
 variable "name_of_private_server" {
   
 }
+variable "role" {
+  type = string
+  
+}
