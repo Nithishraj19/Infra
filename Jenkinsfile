@@ -42,7 +42,7 @@ def message = " Job Name: ${env.JOB_NAME}\nBuild Number: ${env.BUILD_NUMBER}\nBu
             }
             steps{
              script{
-                   if (env.BRANCH_NAME=='master'){
+                   if (env.BRANCH_NAME=='terraform'){
                   sh ''' terraform destroy -auto-approve'''
         }
                   else{
