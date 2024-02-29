@@ -21,7 +21,7 @@ pipeline {
             steps {
                 script {
                     // Use ssh-agent for authentication and scp to copy privatekey.pem to the server
-                    sshagent(credentials: ['your-ssh-credentials-id']) {
+                    sshagent(credentials: ['sshcreds']) {
                         sh "scp -o StrictHostKeyChecking=no /var/libs/jenkins/privatekey.pem ubuntu@${env.PUBLIC_IP}:/home/ubuntu/privatekey.pem"
                     }
                 }
