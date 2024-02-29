@@ -98,52 +98,31 @@ resource "aws_security_group" "securitygroup" {
   name        = "public-sg"
   description = "Allow TLS inbound traffic"
   vpc_id      = aws_vpc.main.id
-  ingress {
-    description = "VPC"
-    from_port   = var.inbound_to_HTTP
-    to_port     = var.inbound_to_HTTP
-    protocol    = "tcp"
+  dynamic "ingress" {
+    for_each = [80, 22]
+
+    content {
+      description = ingress.value == 80 ? "Allow HTTP traffic" : "Allow SSH traffic"
+      from_port   = ingress.value
+      to_port     = ingress.value
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
   }
   egress {
-    from_port = var.egress_from_port
-    to_port   = var.egress_to_port
-    protocol  = "-1"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
   tags = {
     Name = "securitygroup"
   }
 }
-# update security group for ssh
-resource "aws_security_group_rule" "inbound" {
-  type              = "ingress"
-  from_port         = var.inbound_for_ssh_from_port
-  to_port           = var.inbound_for_ssh_to_port
-  protocol          = "tcp"
-  cidr_blocks       = var.incoming_traffic
-  security_group_id = aws_security_group.securitygroup.id
-}
-#update security group for HTTP
-
-resource "aws_security_group_rule" "inbound_for_HTTP" {
-  type              = "ingress"
-  from_port         = var.inbound_for_HTTP
-  to_port           = var.inbound_to_HTTP
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.securitygroup.id
-}
-resource "aws_security_group_rule" "outbound_for_HTTP" {
-  type              = "egress"
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
-  cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.securitygroup.id
-}
 
 #Create a role 
 resource "aws_iam_role" "ec2_access_role" {
-  name = "ec2_access_role"
+  name = "ec2_full_accesss"
 
   assume_role_policy = <<EOF
 {
@@ -161,9 +140,6 @@ resource "aws_iam_role" "ec2_access_role" {
 }
 EOF
 
-  tags = {
-      tag-key = "tag-value"
-  }
 }
 
 # #create an Public_server
@@ -176,9 +152,7 @@ resource "aws_instance" "pubic_server" {
   vpc_security_group_ids      = [aws_security_group.securitygroup.id]
   key_name                    = var.server1_key_name
 
-  iam_instance_profile {
-    name = aws_iam_role.ec2_access_role.name
-  }
+  # iam_instance_profile = "ec2_full_access"
 
   tags = {
     Name =  "Public_server"
@@ -190,47 +164,26 @@ resource "aws_security_group" "private-sg" {
   name        = "private-sg"
   description = "Allow TLS inbound traffic"
   vpc_id      = aws_vpc.main.id
-  ingress {
-    description = "VPC"
-    from_port   = var.inbound_to_HTTP
-    to_port     = var.inbound_to_HTTP
-    protocol    = "tcp"
+  dynamic "ingress" {
+    for_each = [80, 22]
+
+    content {
+      description = ingress.value == 80 ? "Allow HTTP traffic" : "Allow SSH traffic"
+      from_port   = ingress.value
+      to_port     = ingress.value
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
   }
-  egress {
-    from_port = var.egress_from_port
-    to_port   = var.egress_to_port
-    protocol  = "-1"
+   egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
   tags = {
     Name = "private-sg"
   }
-}
-# update security group for ssh
-resource "aws_security_group_rule" "inbound1" {
-  type              = "ingress"
-  from_port         = var.inbound_for_ssh_from_port
-  to_port           = var.inbound_for_ssh_to_port
-  protocol          = "tcp"
-  cidr_blocks       = var.incoming_traffic
-  security_group_id = aws_security_group.private-sg.id
-}
-#update security group for HTTP
-
-resource "aws_security_group_rule" "inbound_for_HTTP1" {
-  type              = "ingress"
-  from_port         = var.inbound_for_HTTP
-  to_port           = var.inbound_to_HTTP
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.private-sg.id
-}
-resource "aws_security_group_rule" "outbound_for_HTTP1" {
-  type              = "egress"
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
-  cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.private-sg.id
 }
 
 # #create an Private_server
@@ -253,19 +206,25 @@ resource "aws_instance" "private_server" {
 #create another security group for loalbalancer
 # create my security group for Private_server
 resource "aws_security_group" "securitygroup2" {
-  name        = "private-sg1"
+  name        = "lb-sg"
   description = "Allow TLS inbound traffic"
   vpc_id      = aws_vpc.main.id
-  ingress {
-    description = "VPC"
-    from_port   = var.inbound_to_HTTP
-    to_port     = var.inbound_to_HTTP
-    protocol    = "tcp"
+  dynamic "ingress" {
+    for_each = [80]
+
+    content {
+      description = ingress.value == 80 ? "Allow HTTP traffic" : "Allow SSH traffic"
+      from_port   = ingress.value
+      to_port     = ingress.value
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
   }
-  egress {
-    from_port = var.egress_from_port
-    to_port   = var.egress_to_port
-    protocol  = "-1"
+   egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
   tags = {
     Name = "securitygroup2"
@@ -299,7 +258,7 @@ resource "aws_lb_target_group_attachment" "main" {
 }
 
 # create a load balancer
-resource "aws_lb" "example_alb" {
+resource "aws_lb" "alb" {
   name               = "loadbalancer"
   load_balancer_type = "application"
   internal           = false
@@ -314,8 +273,8 @@ resource "aws_lb" "example_alb" {
 }
 
 #Here load_balncer_listener
-resource "aws_lb_listener" "example_listener" {
-  load_balancer_arn = aws_lb.example_alb.arn
+resource "aws_lb_listener" "listener" {
+  load_balancer_arn = aws_lb.alb.arn
   port              = 80
   protocol          = "HTTP"
 
