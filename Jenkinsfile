@@ -22,12 +22,14 @@ pipeline {
                 script {
                     // SSH into the server and run the commands using the 'publicIpAddress' environment variable
                     sshagent(['sshcreds']) {
-                        sh 'ssh -o StrictHostKeyChecking=no ubuntu@${env.PUBLIC_IP} "sudo apt-add-repository -y ppa:ansible/ansible && \
+                        sh """
+                        ssh -o StrictHostKeyChecking=no ubuntu@${env.PUBLIC_IP} "sudo apt-add-repository -y ppa:ansible/ansible && \
                             sudo apt update && \
                             sudo apt install -y ansible && \
                             sudo apt-get install -y python3 && \
                             sudo apt-get install -y python3-pip && \
-                            sudo pip3 install boto3"'
+                            sudo pip3 install boto3"
+                        """
                     }
                 }
             }
