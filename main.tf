@@ -3,7 +3,7 @@ resource "aws_vpc" "main" {
   cidr_block       = var.vpc_cidr
   instance_tenancy = "default"
   tags = {
-    Name = "Demo-vpc"
+    Name = "Prod-VPC"
   }
 }
 
@@ -14,7 +14,7 @@ resource "aws_subnet" "public_Subnet" {
   cidr_block        = var.public_subnet_cidr[count.index]
   availability_zone = var.public_subnet_availability_zone[count.index]
   tags = {
-    Name = "Public_Subnet"
+    Name = "Public_Subnet-${count.index}"
   }
 }
 
@@ -31,10 +31,10 @@ resource "aws_subnet" "private_subnet" {
 
 
 #create internet_gateway
-resource "aws_internet_gateway" "Demo_ig" {
+resource "aws_internet_gateway" "ig" {
   vpc_id = aws_vpc.main.id
   tags = {
-    Name = "Demo_ig"
+    Name = "Prod-Ig"
   }
 }
 # Create Nat Gateway
@@ -45,7 +45,7 @@ resource "aws_nat_gateway" "nat_gateway" {
   allocation_id = aws_eip.nat_gateway.id
   subnet_id     = aws_subnet.public_Subnet[1].id
   tags = {
-    "Name" = "Demo_nat_gateway"
+    "Name" = "Prod-Ngw"
   }
 }
 
@@ -78,11 +78,12 @@ resource "aws_route_table_association" "private" {
   subnet_id      = aws_subnet.private_subnet[count.index].id
   route_table_id = aws_route_table.Private_rt.id
 }
+
 # connect internetgateway with public_rt1
 resource "aws_route" "route" {
   route_table_id         = aws_route_table.Public_rt.id
   destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = aws_internet_gateway.Demo_ig.id
+  gateway_id             = aws_internet_gateway.ig.id
 }
 # connect with natgateway with 
 resource "aws_route" "route1" {
@@ -93,12 +94,12 @@ resource "aws_route" "route1" {
 }
 
 # create my security group for Public_server
-resource "aws_security_group" "my-sec-group" {
+resource "aws_security_group" "securitygroup" {
   name        = "public-sg"
   description = "Allow TLS inbound traffic"
   vpc_id      = aws_vpc.main.id
   ingress {
-    description = "TLS from VPC"
+    description = "VPC"
     from_port   = var.inbound_to_HTTP
     to_port     = var.inbound_to_HTTP
     protocol    = "tcp"
@@ -109,7 +110,7 @@ resource "aws_security_group" "my-sec-group" {
     protocol  = "-1"
   }
   tags = {
-    Name = "my-sec-group"
+    Name = "securitygroup"
   }
 }
 # update security group for ssh
@@ -119,7 +120,7 @@ resource "aws_security_group_rule" "inbound" {
   to_port           = var.inbound_for_ssh_to_port
   protocol          = "tcp"
   cidr_blocks       = var.incoming_traffic
-  security_group_id = aws_security_group.my-sec-group.id
+  security_group_id = aws_security_group.securitygroup.id
 }
 #update security group for HTTP
 
@@ -129,7 +130,7 @@ resource "aws_security_group_rule" "inbound_for_HTTP" {
   to_port           = var.inbound_to_HTTP
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.my-sec-group.id
+  security_group_id = aws_security_group.securitygroup.id
 }
 resource "aws_security_group_rule" "outbound_for_HTTP" {
   type              = "egress"
@@ -137,12 +138,12 @@ resource "aws_security_group_rule" "outbound_for_HTTP" {
   to_port           = 0
   protocol          = "-1"
   cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.my-sec-group.id
+  security_group_id = aws_security_group.securitygroup.id
 }
 
 #Create a role 
-resource "aws_iam_role" "test_role" {
-  name = "test_role"
+resource "aws_iam_role" "ec2_access_role" {
+  name = "ec2_access_role"
 
   assume_role_policy = <<EOF
 {
@@ -172,21 +173,25 @@ resource "aws_instance" "pubic_server" {
   subnet_id     = aws_subnet.public_Subnet[0].id
 
   associate_public_ip_address = "true"
-  vpc_security_group_ids      = [aws_security_group.my-sec-group.id]
+  vpc_security_group_ids      = [aws_security_group.securitygroup.id]
   key_name                    = var.server1_key_name
 
+  iam_instance_profile {
+    name = aws_iam_role.ec2_access_role.name
+  }
+
   tags = {
-    Name = var.name_of_first_server
+    Name =  "Public_server"
   }
 }
 
 # create my security group for Private_server
-resource "aws_security_group" "my-sec-group1" {
+resource "aws_security_group" "private-sg" {
   name        = "private-sg"
   description = "Allow TLS inbound traffic"
   vpc_id      = aws_vpc.main.id
   ingress {
-    description = "TLS from VPC"
+    description = "VPC"
     from_port   = var.inbound_to_HTTP
     to_port     = var.inbound_to_HTTP
     protocol    = "tcp"
@@ -197,7 +202,7 @@ resource "aws_security_group" "my-sec-group1" {
     protocol  = "-1"
   }
   tags = {
-    Name = "my-sec-group1"
+    Name = "private-sg"
   }
 }
 # update security group for ssh
@@ -207,7 +212,7 @@ resource "aws_security_group_rule" "inbound1" {
   to_port           = var.inbound_for_ssh_to_port
   protocol          = "tcp"
   cidr_blocks       = var.incoming_traffic
-  security_group_id = aws_security_group.my-sec-group1.id
+  security_group_id = aws_security_group.private-sg.id
 }
 #update security group for HTTP
 
@@ -217,7 +222,7 @@ resource "aws_security_group_rule" "inbound_for_HTTP1" {
   to_port           = var.inbound_to_HTTP
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.my-sec-group1.id
+  security_group_id = aws_security_group.private-sg.id
 }
 resource "aws_security_group_rule" "outbound_for_HTTP1" {
   type              = "egress"
@@ -225,7 +230,7 @@ resource "aws_security_group_rule" "outbound_for_HTTP1" {
   to_port           = 0
   protocol          = "-1"
   cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.my-sec-group1.id
+  security_group_id = aws_security_group.private-sg.id
 }
 
 # #create an Private_server
@@ -235,11 +240,11 @@ resource "aws_instance" "private_server" {
   instance_type               = var.instance_type
   subnet_id                   = aws_subnet.private_subnet[count.index].id
   associate_public_ip_address = "false"
-  vpc_security_group_ids      = [aws_security_group.my-sec-group1.id]
+  vpc_security_group_ids      = [aws_security_group.private-sg.id]
   key_name                    = var.server1_key_name
 
   tags = {
-    Name = var.name_of_private_server[count.index]
+    Name = "Private_server-${count.index}"
   }
 }
 
@@ -247,12 +252,12 @@ resource "aws_instance" "private_server" {
 
 #create another security group for loalbalancer
 # create my security group for Private_server
-resource "aws_security_group" "my-sec-group2" {
+resource "aws_security_group" "securitygroup2" {
   name        = "private-sg1"
   description = "Allow TLS inbound traffic"
   vpc_id      = aws_vpc.main.id
   ingress {
-    description = "TLS from VPC"
+    description = "VPC"
     from_port   = var.inbound_to_HTTP
     to_port     = var.inbound_to_HTTP
     protocol    = "tcp"
@@ -263,41 +268,42 @@ resource "aws_security_group" "my-sec-group2" {
     protocol  = "-1"
   }
   tags = {
-    Name = "my-sec-group2"
+    Name = "securitygroup2"
   }
 }
 #target group
-resource "aws_lb_target_group" "test" {
-  name                          = "my-targetgroup"
+resource "aws_lb_target_group" "main" {
+  name                          = "targetgroup"
   port                          = 80
   protocol                      = "HTTP"
   vpc_id                        = aws_vpc.main.id
   load_balancing_algorithm_type = "round_robin"
   health_check {
     enabled             = true
-    interval            = 40
+    interval            = 30
     path                = "/"
     port                = "traffic-port"
     protocol            = "HTTP"
     unhealthy_threshold = 2
     healthy_threshold   = 2
-    timeout             = 30
+    timeout             = 5
   }
 }
 
 #attach instance with target group
-resource "aws_lb_target_group_attachment" "test" {
+resource "aws_lb_target_group_attachment" "main" {
   count = length(aws_instance.private_server)
-  target_group_arn = aws_lb_target_group.test.arn
+  target_group_arn = aws_lb_target_group.main.arn
   target_id        = aws_instance.private_server[count.index].id
   port             = 80
 }
 
 # create a load balancer
 resource "aws_lb" "example_alb" {
-  name               = "my-loadbalancer"
+  name               = "loadbalancer"
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.my-sec-group2.id]
+  internal           = false
+  security_groups    = [aws_security_group.securitygroup2.id]
 
   subnet_mapping {
     subnet_id = aws_subnet.public_Subnet[0].id
@@ -315,6 +321,6 @@ resource "aws_lb_listener" "example_listener" {
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.test.arn
+    target_group_arn = aws_lb_target_group.main.arn
   }
 }

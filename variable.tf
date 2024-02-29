@@ -43,9 +43,7 @@ variable "instance_type" {
 variable "server1_key_name" {
   
 }
-variable "name_of_first_server" {
-  
-}
+
 variable "ami_of_private_server" {
   
 }

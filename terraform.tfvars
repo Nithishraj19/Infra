@@ -12,7 +12,6 @@ inbound_for_ssh_from_port       = "22"
 inbound_for_ssh_to_port         = "22"
 instance_type                   = "t2.micro"
 server1_key_name                = "surya"
-name_of_first_server            = "Public_server"
 ami_of_Public_server1           = "ami-03f4878755434977f"
 ami_of_private_server           = "ami-03f4878755434977f"
 name_of_private_server          = ["private_server1", "private_server2"]
