@@ -17,26 +17,14 @@ pipeline {
                 }
             }
         }
-        stage('Clone or Pull Ansible Repository on Server') {
+        stage('Clone Ansible Repository on Server') {
             steps {
                 script {
-                    // SSH into the server and check if the directory already exists
-                    def directoryExists = sh(script: "ssh ubuntu@${env.PUBLIC_IP} '[ -d /home/ubuntu/Infrastructure ] && echo true || echo false'", returnStdout: true).trim()
-
-                    if (directoryExists == 'true') {
-                        echo "Directory '/home/ubuntu/Infrastructure' already exists. Performing git pull..."
-                        sshagent(credentials: ['your-ssh-credentials-id']) {
-                            sh """
-                            ssh -o StrictHostKeyChecking=no ubuntu@${env.PUBLIC_IP} 'cd /home/ubuntu/Infrastructure && git pull'
-                            """
-                        }
-                    } else {
-                        echo "Directory '/home/ubuntu/Infrastructure' does not exist. Performing git clone..."
-                        sshagent(credentials: ['your-ssh-credentials-id']) {
-                            sh """
-                            ssh -o StrictHostKeyChecking=no ubuntu@${env.PUBLIC_IP} 'git clone -o StrictHostKeyChecking=no -b ansible --single-branch git@github.com:suriya8299/Infrastructure.git /home/ubuntu/Infrastructure'
-                            """
-                        }
+                    // SSH into the server and clone the Ansible repository (only ansible branch)
+                    sshagent(credentials: ['sshcreds']) {
+                        sh """
+                        ssh -o StrictHostKeyChecking=no ubuntu@${env.PUBLIC_IP} 'git clone -o StrictHostKeyChecking=no -b ansible --single-branch git@github.com:suriya8299/Infrastructure.git /home/ubuntu/Infrastructure'
+                        """
                     }
                 }
             }
