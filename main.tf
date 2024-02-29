@@ -150,7 +150,6 @@ resource "aws_instance" "pubic_server" {
   associate_public_ip_address = "true"
   vpc_security_group_ids      = [aws_security_group.securitygroup.id]
   key_name                    = var.server1_key_name
-  iam_instance_profile = var.role
   # iam_instance_profile = "ec2_full_access"
 
   tags = {
