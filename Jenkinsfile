@@ -23,7 +23,7 @@ pipeline {
                     // SSH into the server and clone the Ansible repository (only ansible branch)
                     sshagent(credentials: ['sshcreds']) {
                         sh """
-                        ssh -o StrictHostKeyChecking=no ubuntu@${env.PUBLIC_IP} 'GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no" git clone -b ansible --single-branch git@github.com:suriya8299/Infrastructure.git /home/ubuntu/Infrastructure'
+                        ssh -o StrictHostKeyChecking=no ubuntu@${env.PUBLIC_IP} 'GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no" git clone -b ansible --single-branch https://suriya8299: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@github.com/suriya8299/Infrastructure.git /home/ubuntu/Infrastructure'
                         """
                     }
                 }
